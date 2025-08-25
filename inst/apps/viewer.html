@@ -1,0 +1,387 @@
+<html>
+  <head>
+    <title>Context Viewer</title>
+    <script>
+      let data = //_ENA_MODEL_//;
+    </script>
+    <script type="text/javascript">
+      const row_height = 20;
+      
+      let lou = {
+        proxyList: {
+          set: (target, key, value) => {
+            target[key] = value;
+            return(true);
+          },
+          get: function(target, key, receiver) {
+            if(key === "before") {
+              return function(e, i) {
+                let cloned_e, added = [];
+                [...target].forEach( t => {
+                  cloned_e = e.cloneNode(true);
+                  added.push(new Proxy(cloned_e, lou.proxy));
+                  t.before(cloned_e);
+                });
+                return new Proxy(added, lou.proxyList);
+              }
+            }
+            if(key === "after") {
+              return function(e, i) {
+                let cloned_e, added = [];
+                [...target].forEach( t => {
+                  cloned_e = e.cloneNode(true);
+                  added.push(new Proxy(cloned_e, lou.proxy));
+                  t.after(cloned_e);
+                });
+                return new Proxy(added, lou.proxyList);
+              }
+            }
+            else if (key === "addEventListener") {
+              return function(e, f) {
+                [...target].forEach( t => {
+                  t.addEventListener(e, f);
+                });
+                return receiver;
+              }
+            }
+          }
+        },
+        proxy: {
+          set: (target, key, value) => {
+            target[key] = value;
+            return(true);
+          },
+          get: function(target, key, receiver) {
+            let _this = this;
+            
+            if(key === "data") {
+              return function(e) {
+                if(!e) {
+                  return(target[`_${key}_`])
+                } else {
+                  target[`_${key}_`] = e;
+                  return receiver;
+                }
+              }
+            }
+            else if (key === "join") {
+              return function(...args) {
+                let 
+                  enter = args[0], 
+                  updated = args[1],
+                  exit = args[2],
+                  data = this.data()
+                ;
+                let i = 0;
+                for(let ei in data) {
+                  let e = data[ei];
+                  enter.apply(this, [e, i]);
+                  i = i + 1;
+                }
+                return receiver;
+              }
+            }
+            else if (key === "end") {
+              return function(n) {
+                let p = receiver;
+                while (n > 0) {
+                  p = p.parentElement;
+                  n = n - 1;
+                }
+                return (lou.q(p));
+              }
+            }
+            else {
+              const value = target[key];
+              if (value instanceof Function) {
+                return function (...args) {
+                  return value.apply(this === receiver ? target : this, args);
+                };
+              }
+              else {
+                return target[key];
+              }
+            }
+          }
+        },
+        q: (sel) => {
+          let 
+            elm = typeof sel === "string" ? document.querySelector(sel) : sel,
+            obj
+          ;
+          if(elm) {
+            obj = new Proxy(elm, lou.proxy)
+          }
+          return(obj);
+        },
+        qAll: (sel) => {
+          let 
+            elms = typeof sel === "string" ? document.querySelectorAll(sel) : sel,
+            obj, obj_items
+          ;
+          if(elms) {
+            //obj_items = [...elms].map(elm => new Proxy(elm, lou.proxy));
+            obj = new Proxy(elms, lou.proxyList);
+          }
+          return(obj);
+        }
+      }
+      document.addEventListener("DOMContentLoaded", function(event) {
+        const 
+          tbl = data.data,
+          ID_COL = Object.keys(tbl[0]).find( k => k === "QEUNIT" || k === "ENA_UNIT" )
+        ;
+        let
+          viewer = document.querySelector("#viewer_table"),
+          header = Object.keys(tbl[0]).filter( k => k !== ID_COL ), // && k !== "QEID"),
+          td_ = () => document.createElement("div"),
+          prev_uncollapse = function(elm) {
+            let prev = elm.previousSibling;
+            while(prev && prev.classList.contains("collapsed")) {
+              prev.classList.add("opened");
+              prev = prev.previousSibling;
+            }
+          },
+          find_collapse = function(elm) {
+            let next = elm.nextSibling;
+            while(next && !next.classList.contains("uncollapse")) {
+              next = next.nextSibling;
+            }
+            return next;
+          },
+          prev_collapse = function(elm) {
+            let prev = elm.previousSibling;
+            while(prev && prev.classList.contains("collapsed")) {
+              prev.classList.remove("opened");
+              prev = prev.previousSibling;
+            }
+            elm.classList.remove("opened")
+          }
+        ;
+        lou
+          .q("div.tbody")
+          .data(header)
+          .join(
+            function(enter, i) {
+              let 
+                th = document.createElement("div"),
+                td = td_()
+              ;
+              th.classList.add('col');
+              if(enter === "text") {
+                th.classList.add('text');
+              }
+              td.innerHTML = enter;
+              td.classList.add("header");
+              th.appendChild(td);
+              lou
+                .q(th)
+                .data(tbl.map( d => d[enter] ))
+                .join(
+                  function(enter2, j) {
+                    let td2 = td_(), collapsed = true;
+                    td2.innerHTML = enter2;
+                    td2.classList.add("cell");
+                    
+                    let qeid = tbl[j].QEID;
+                    
+                    // Is Unit row
+                    if(data.unitRows.findIndex(a => a === qeid) >= 0) {
+                      td2.classList.add("unitrow");
+                      if(data.unitRows.findIndex(a => a === qeid)) {
+                        td2.addEventListener("mouseover", function(event) {
+                          lou.q(".hover").style.display = 'block';
+                          lou.q(".hover").style.top = `${event.target.getBoundingClientRect().y - ((data.window - 1) * row_height) -  5}px`;
+                          lou.q(".hover").style.height = `${(data.window * row_height) + 5}px`;
+                        }); 
+                      }
+                      else {
+                      }
+                    }
+
+                    // Not Unit, but in Window
+                    if(
+                      data.unitRows.filter(a => ![].concat(data.toRemove).flat().some(b => b === a))
+                        .some( a => a >= qeid && a < (qeid + data.window))
+                    ) {
+                      collapsed = false;
+                    }
+                    td2.addEventListener("mouseout", function(event) {
+                      lou.q(".hover").style.display = 'none';
+                    });
+
+                    if(collapsed === true) {
+                      td2.classList.add("collapsed");
+                      td2.addEventListener("click", function(event) {
+                        // prev_collapse(this);
+                        let 
+                          coll_elm = find_collapse(this),
+                          e_i = [...this.parentElement.childNodes].findIndex( c => c === coll_elm ),
+                          open_elms = [...document.querySelectorAll(".col")].map( c => 
+                            c.querySelector(`:nth-child(${e_i + 1})`)
+                          ) //.filter( e => e !== this)
+                        ;
+                        
+                        console.log("LOK", find_collapse(this));
+                        const custom_event = new CustomEvent("close", { detail: {} });
+                        open_elms.forEach ( oe => {
+                          oe.dispatchEvent(custom_event)
+                        })
+                      })
+                    }
+                    else {
+                      td2.classList.remove("collapsed");
+                    }
+                    th.appendChild(td2);
+                  }
+                )
+              ;
+
+              this.appendChild(th);
+            }
+          )
+        ;
+        
+        let 
+          collapsed_cell = document.createElement("div")
+        ;
+        collapsed_cell.classList.add("cell");
+        collapsed_cell.classList.add("uncollapse");
+        collapsed_cell.innerText = "----";
+        lou
+          .qAll(".cell.collapsed + :not(.collapsed)")
+          .before(collapsed_cell)
+          .addEventListener("click", function(event) {
+            let 
+              e_i = [...this.parentElement.childNodes].findIndex( c => c === this ),
+              open_elms = [...document.querySelectorAll(".col")].map( c => 
+                c.querySelector(`:nth-child(${e_i + 1})`)
+              ) //.filter( e => e !== this)
+            ;
+            
+            const custom_event = new CustomEvent("open", { detail: {} });
+            open_elms.forEach ( oe => {
+              oe.dispatchEvent(custom_event)
+            })
+          })
+          .addEventListener("open", function(event) {
+            console.log("Opening: ", this);
+            this.classList.add("opened");
+            prev_uncollapse(this);
+          })
+          .addEventListener("close", function(event) {
+            console.log("Close: ", this);
+            
+            // this.classList.add("opened");
+             prev_collapse(this);
+          })
+        ;
+        /*
+        lou
+          .q(".tbody")
+          .data(header)
+          .join(
+            function(enter) {
+              let
+                col = document.createElement("div"),
+                td_ = () => document.createElement("div"),
+                td
+              ;
+              col.classList.add("col");
+              console.log("header: ", enter);
+              //debugger;
+              //for(let r in enter) {
+              for (let h in enter) {
+                if(enter.hasOwnProperty(h)) {
+                  td = td_();
+                  td.classList.add("td")
+                  console.log("header: ", enter);
+                  td.innerHTML = `<div>${enter[h]}</div>`;
+                  col.appendChild(td);
+                }
+              }
+              this.appendChild(col);
+            }
+          )
+        ;
+        */
+      });
+    </script>
+    <style type="text/css">
+      :root {
+        --row-height: 20px;
+      }
+      html, body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      #container {
+        overflow: auto;
+        width: 100%;
+        height: 100%;
+      }
+        .hover {
+          width: calc(100% - 20px);
+          height: calc(var(--row-height) * 4);
+          background-color: orange;
+          position: absolute;
+          left: 15px;
+          top: 0px;
+          z-index: 100;
+          opacity: 0.2;
+          display: none;
+        }
+        .table {
+          width: 100%;
+          height: 100%;
+          border-collapse: collapse;
+          margin: 0;
+          padding: 0 0 0 20px;
+          position: relative;
+          z-index: 200;
+        }
+          .table .tbody {
+            display: flex;
+          }
+          .table .col {
+            flex: 1;
+            overflow: hidden;
+            padding: 0 0 0 0;
+          }
+            .table .col.text {
+              flex: 4;
+            }
+            .table .col .header {
+            }
+            .table .col .cell {
+                overflow: auto;
+                height: 20px;
+                transition-property: height;
+                transition-duration: 500ms;
+              }
+            .table .col .cell.unitrow {
+              font-weight: bold;
+            }
+            .table .col .cell.collapsed:not(.opened) {
+              height: 0;
+            }
+            .table .col .cell.collapsed.opened {
+              background: #efefef94;
+            }
+            .table .col .cell.uncollapse.opened {
+              height: 0;
+            }
+            
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div class='hover'></div>
+      <div class='table' id='viewer_table'>
+        <div class='tbody'>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
