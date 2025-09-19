@@ -9,8 +9,8 @@ accumulate(
   codes,
   tensor = context_tensor(context_model$model$raw.input),
   time_column = NULL,
-  ordered = TRUE,
-  binary = FALSE
+  ordered = FALSE,
+  binary = TRUE
 )
 }
 \arguments{

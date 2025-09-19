@@ -1,19 +1,38 @@
 testthat::context("Test conversations");
  
 data("RS.data");
-RS.data$Context <- "Public";
-RS.data$Row <- seq(nrow(RS.data));
+# RS.data$Context <- "Public";
+# RS.data$Row <- seq(nrow(RS.data));
   
-units_by <- c("Condition", "GroupName", "UserName");
+units_by <- c("Condition", "UserName");
 hoo_rules <- conversation_rules(
-  # (Condition == UNIT$Condition & UserName == UNIT$UserName)
-  (Condition == UNIT$Condition & GroupName == UNIT$GroupName & UserName == UNIT$UserName)
+  (Condition == UNIT$Condition & GroupName == UNIT$GroupName)
 );
+codes = c('Data','Technical.Constraints','Performance.Parameters','Client.and.Consultant.Requests','Design.Reasoning','Collaboration');
 
 test_that("verify context length", {
-  rs_contexts_tables <- contexts(RS.data, units_by = units_by, hoo_rules = hoo_rules)
+  # rs_contexts_tables <- contexts(RS.data, units_by = units_by, hoo_rules = hoo_rules)
+  context_model <- contexts(
+    RS.data,
+    units_by = make.names(units_by),
+    hoo_rules = hoo_rules
+  )
   
-  testthat::expect_equal(length(rs_contexts_tables$model$contexts), data.table:::uniqueN(RS.data, by = units_by))
+  multidim_arr <- context_tensor(
+    RS.data, 
+    sender_cols = NULL,
+    receiver_cols = NULL,
+    default_window = 4,
+    default_weight = 1
+  )
+  
+  result_new <- accumulate(
+    tensor = multidim_arr, 
+    codes = codes,
+    context_model = context_model
+  )
+  
+  testthat::expect_equal(length(context_model$model$contexts), data.table:::uniqueN(RS.data, by = units_by))
 })
 
 # test_that("verify accumulation", {

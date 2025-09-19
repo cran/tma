@@ -1,9 +1,11 @@
-# Adjacency Key
-#
-# @param codes character vector
-# @param upper logical, default, TRUE, returns the key for the upper triangle, FALSE - not implemented yet
-#
-# @return matrix
+#' Adjacency Key
+#'
+#' @param codes character vector
+#' @param upper logical, default, TRUE, returns the key for the upper triangle, FALSE - not implemented yet
+#' 
+#' @export
+#'
+#' @return matrix
 adjacency_key <- function(codes, upper = TRUE) {
   expanded <- expand.grid(codes, codes);
   rownames(expanded) <- apply(expanded, 1, paste, collapse = " & ");

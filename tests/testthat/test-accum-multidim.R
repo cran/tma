@@ -89,12 +89,14 @@ test_that("no senders, no receivers, modality", {
   multidim_arr["chat", "window"] <- 360
   multidim_arr["resource", "window"] <- 180
   
-  result_new <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_new <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  });
   
   # Compare vectors across all 3 units 
   
@@ -155,12 +157,14 @@ test_that("sender, no receivers, no modality", {
   multidim_arr["Mentor", "window"] <- 360
   multidim_arr["Player", "window"] <- 180
   
-  result_new <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_new <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  });
  
   # Compare vectors across all 3 units 
   
@@ -225,12 +229,14 @@ test_that("no senders, receiver, no modality", {
   multidim_arr["L1", "window"] <- 360
   multidim_arr["L2", "window"] <- 180
   
-  result_new <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_new <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  });
 
   # Compare vectors across all 3 units 
   
@@ -283,13 +289,14 @@ test_that("sender, no receiver, modality", {
   multidim_arr["Player", "chat", "window"] <- 180
   multidim_arr["Player", "resource", "window"] <- 360
   
-  
-  result_new <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_new <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  });  
   
   # Get old TMA results
   result_old <- tma:::accumulate_contexts (
@@ -375,13 +382,14 @@ test_that("no sender, receiver, modality", {
   multidim_arr["L2", "chat", "window"] <- 60
   multidim_arr["L2", "resource", "window"] <- 120
   
-  result_new <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
-  
+  suppressWarnings({
+    result_new <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  });
   
   # Get old TMA results
   result_old <- tma:::accumulate_contexts (
@@ -456,13 +464,14 @@ test_that("sender, receiver, no modality", {
   multidim_arr["Player", "L1", "window"] <- 250
   multidim_arr["Player", "L2", "window"] <- 200
   
-  result_new <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
-  
+  suppressWarnings({
+    result_new <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  });  
   
   # Get old TMA results
   result_old <- tma:::accumulate_contexts (
@@ -547,13 +556,14 @@ test_that("sender, receiver, modality", {
   multidim_arr["Player", "L2", "chat", "window"] <- 150
   multidim_arr["Player", "L2", "resource", "window"] <- 360
   
-  
-  result_new <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_new <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  })
   
   # Get old TMA results
   result_old <- tma:::accumulate_contexts (
@@ -696,13 +706,14 @@ test_that("senders, receivers, modality", {
   multidim_arr["Mentor", "L2", "Mentor", "good", "chat", "window"] <- 180
   multidim_arr["Mentor", "L2", "Mentor", "good", "resource", "window"] <- 360
   
-  
-  result_new <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_new <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  })
   
   # Get old TMA results
   #' User 1: A & C = 2, all else 0. good

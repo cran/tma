@@ -25,8 +25,8 @@ accumulate <- function(
   codes,
   tensor = context_tensor(context_model$model$raw.input),
   time_column = NULL,
-  ordered = TRUE,
-  binary = FALSE
+  ordered = FALSE,
+  binary = TRUE
 ) {
   send_cols = attr(tensor, "sender_cols");
   recv_cols = attr(tensor, "receiver_cols");
@@ -47,6 +47,8 @@ accumulate <- function(
   units_by <- context_model$`_function.params`$units.by;
   meta_cols <- c("QEID", "QEUNIT", units_by);
   
+  mode_dim_1 <- dim(tensor)[1] == 1 && attr(tensor, "mode_column") == ATTR_NAMES$CONTEXT_ID;
+
   result_cpp <- lapply(context_model$model$contexts, function(ctx) {
     ctx_fun <- function(ctx__) {
       unit_context_lookup <- as.matrix(ctx__[, lapply(.SD, function(x) as.numeric(as.factor(x))), .SDcols = c(send_cols, recv_cols, mode_cols)]);
@@ -120,7 +122,7 @@ accumulate <- function(
     
     context_model$model$row.connection.counts <- as.unordered(context_model$model$row.connection.counts);
     
-    connection_counts <- context_model$model$row.connection.counts[, lapply(.SD, colSums.ena.matrix, binary = FALSE), by = "QEUNIT", .SDcols = adj_vector_names];
+    connection_counts <- context_model$model$row.connection.counts[, lapply(.SD, colSums.ena.matrix, binary = binary), by = "QEUNIT", .SDcols = adj_vector_names];
     connection_counts <- connection_counts[, lapply(.SD, reclass, "ena.co.occurrence"), .SDcols = adj_vector_names];
     cc_type <- "unordered.ena.connections"
   }

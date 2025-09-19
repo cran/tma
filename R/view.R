@@ -135,6 +135,11 @@ view <- function(
   unit_conv$data <- tbl;
   unit_conv$units <- wh;
   unit_conv$window <- window_size;
+
+  if(requireNamespace("jsonlite", quietly = TRUE) == FALSE) {
+    stop("Please install the `jsonlite` package to use this function.")
+  }
+  
   tbl_json <- jsonlite::toJSON(unit_conv, auto_unbox = TRUE);
 
   tmp_html <- tempfile(fileext = ".html")

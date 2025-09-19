@@ -10,27 +10,17 @@ int choose_two(int n) {
 }
 
 arma::rowvec vector_to_summed_uppertri(arma::vec blank) {
-  // Rcpp::Rcout << "V1" << std::endl;
-  // Rcpp::Rcout << blank << std::endl;
   int code_count = pow(blank.size(), 0.5);
   int tri_size = choose_two(code_count);
   arma::rowvec network_vector = arma::rowvec(tri_size);
-  // Rcpp::Rcout << "V2" << std::endl;
-  // Rcpp::Rcout << network_vector << std::endl;
   
   arma::mat blank_mat(blank);
   blank_mat.reshape(code_count, code_count);
-  // Rcpp::Rcout << "Mat" << std::endl;
-  // Rcpp::Rcout << blank_mat;
   
   blank_mat = blank_mat + blank_mat.t();
   arma::colvec blank_vec = blank_mat.as_col();
-  // Rcpp::Rcout << "V3" << std::endl;
   arma::uvec upper_indices = arma::trimatu_ind( arma::size(blank_mat), 1 );
-  // Rcpp::Rcout << "V4" << std::endl;
   network_vector = arma::conv_to< arma::rowvec >::from(blank_vec.elem(upper_indices));
-  // network_vector = blank_vec.elem(upper_indices);
-  // Rcpp::Rcout << "V5" << std::endl;
   
   return network_vector;
 }
@@ -45,7 +35,6 @@ Rcpp::List accumulate_network(
   int time_col = -1,
   bool ordered = true
 ) {
-  // Rcpp::Rcout << "1" << std::endl;
   arma::vec blank(code_cols.size() * code_cols.size());
   Rcpp::DataFrame unit_rows = Rcpp::as<Rcpp::DataFrame>(Rcpp::wrap(unit_rows_sexp));
   Rcpp::NumericMatrix codes(unit_rows.nrow(), code_cols.size());
@@ -262,9 +251,11 @@ int calculate_1d_index_rev(const std::vector<int>& indices, const std::vector<in
      throw std::invalid_argument("Number of indices must match number of dimensions.");
   }
  
+  Rcpp::Rcout << "Indices: ";
   int index = 0;
   int stride = 1;
   for (int i = dims.size() - 1; i >= 0; --i) {
+    Rcpp::Rcout << indices[i] << " ";
     if (indices[i] < 0 || indices[i] >= dims[i]) {
       throw std::out_of_range("Index out of range.");
     }
@@ -342,8 +333,10 @@ Rcpp::List apply_tensor(
 ) {
   const int WINDOW_DIM = 1;
   const int WEIGHT_DIM = 0;
-  
+  const bool IS_DEFAULT_CASE = (dims.size() == 1 && dims[0] == 2); // Check if tensor is just [weight, window]
+
   std::vector<int> dims_v(dims.begin(), dims.end()); // vectorize dims (colnames of senders, receivers, and modes along with weight/window)  
+  
   int code_cnt = codes.n_cols; // get # of codes 
 
   // convert context datatable to 2D C vector
@@ -356,6 +349,14 @@ Rcpp::List apply_tensor(
   arma::mat unit_row_connection_counts(unit_rows.size(), code_cnt * code_cnt); // initialize matrix to return of |unit's rows in context| x |codes^2| (ordered, for now)
   arma::uvec upper_indices = trimatu_ind( size(g_w_vec), 1 ); // indices of upper triangle; for ENA 
  
+  int response_win;
+  int response_weight;
+  if(IS_DEFAULT_CASE) {
+    // Default case: tensor is just [weight, window]
+    response_win = tensor[1];
+    response_weight = tensor[0];
+  }
+
   // iterate over all of this unit's rows 
   for(int i = 0; i < unit_rows.size(); ++i) {
     int unit_row_i = unit_rows[i]; // get current unit row
@@ -363,18 +364,19 @@ Rcpp::List apply_tensor(
     // get response line for this current unit row  
     std::vector<int> response_context_lookup = context_lookup[unit_row_i];
     arma::rowvec row_vec = codes.row(unit_row_i); // get response codes 
-    double response_time = times[unit_row_i]; // get response time 
-   
-   
+    double response_time = times[unit_row_i]; // get response time
+
     // add a 1 to the end of response line; indicates that we are getting windows
-    response_context_lookup.push_back(WINDOW_DIM); 
-   
-    // std::vector<int> response_context_lookup_rev = response_context_lookup;
-    // std::reverse(response_context_lookup_rev.begin(), response_context_lookup_rev.end());
-   
-    // calculate_1d_index calculates index offsetted into 1d multidim_arr (vectorized); this gets idx of receiver vals, and then we get them
-    int response_win_idx = calculate_1d_index(response_context_lookup, dims_v); 
-    int response_win = tensor[response_win_idx];
+    response_context_lookup.push_back(WINDOW_DIM);
+
+    if(!IS_DEFAULT_CASE) {
+      // if not default case, we need to get response window from tensor
+      // set the end of response line (set to 1 earlier) to 1; indicates that we are getting windows
+      response_context_lookup[response_context_lookup.size() - 1] = WINDOW_DIM;
+      // calculate_1d_index calculates index offsetted into 1d multidim_arr (vectorized); this gets idx of receiver vals, and then we get them
+      int response_win_idx = calculate_1d_index(response_context_lookup, dims_v);
+      response_win = tensor[response_win_idx];
+    }
    
     // vector of rows to keep 
     arma::uvec ground_rows_to_include;
@@ -408,10 +410,12 @@ Rcpp::List apply_tensor(
         }
         // std::reverse(row_v.begin(), row_v.end());
        
-        int row_win_idx = calculate_1d_index(row_v, dims_v);
-        double row_win = tensor[row_win_idx]; // get ground window 
-        // std::cout << "Row window: " << row_win << std::endl;
-       
+        double row_win = response_win; // default to response window (for default case)
+        if(!IS_DEFAULT_CASE) {
+          int row_win_idx = calculate_1d_index(row_v, dims_v);
+          row_win = tensor[row_win_idx]; // get ground window
+        }
+
         double ground_row_time_adj = ground_row_time + row_win; // this computation for the TIF makes sense, I think (?)
         double diff = ground_row_time_adj - response_time;
 
@@ -421,8 +425,11 @@ Rcpp::List apply_tensor(
           row_v[row_v.size() - 1] = WEIGHT_DIM;
          
           // apply weights
-          int row_wgt_idx = calculate_1d_index(row_v, dims_v);
-          int row_wgt = tensor[row_wgt_idx];
+          int row_wgt = response_weight;
+          if(!IS_DEFAULT_CASE) {
+            int row_wgt_idx = calculate_1d_index(row_v, dims_v);
+            row_wgt = tensor[row_wgt_idx];
+          }
          
           ground_row_weights.insert_rows(ground_row_weights.n_rows, 1);
           ground_row_weights(ground_row_weights.n_rows - 1) = row_wgt;
@@ -449,14 +456,15 @@ Rcpp::List apply_tensor(
       // std::cout << "-- No Ground on first row --" << std::endl;
     }
     
-    // set the end of response line (set to 1 earlier) to 0; indicates that we are getting weights
-    response_context_lookup[response_context_lookup.size() - 1] = WEIGHT_DIM;
-    int response_wgt_idx = calculate_1d_index(response_context_lookup, dims_v); // same thing as above, except for receiver weight 
-    int response_weight = tensor[response_wgt_idx];
-    // Rcpp::Rcout << "Response weight vector: " << response_weight << std::endl;
+    if(!IS_DEFAULT_CASE) {
+      // if not default case, we need to get response weight from tensor
+      // set the end of response line (set to 1 earlier) to 0; indicates that we are getting weights
+      response_context_lookup[response_context_lookup.size() - 1] = WEIGHT_DIM;
+      int response_wgt_idx = calculate_1d_index(response_context_lookup, dims_v); // same thing as above, except for receiver weight 
+      response_weight = tensor[response_wgt_idx];
+    }
    
     // make g_w_vec, adjacency matrix
-    // Rcpp::Rcout << "Ordered: " << ordered << std::endl;
     arma::mat resp = calculate_adjacency_matrix(g_ws_vec, row_vec, response_weight, ordered); 
     g_w_vec = g_w_vec + resp;
     // std::cout<< "using wght: " << std::endl << g_w_vec << std::endl;

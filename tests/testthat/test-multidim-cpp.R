@@ -31,14 +31,16 @@ test_that("no senders, no receivers, modality", {
   multidim_arr["chat", "window"] <- 360
   multidim_arr["resource", "window"] <- 1280
 
-  result_old <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_old <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  })
   result_new <- accumulate(
-    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes, binary = TRUE
+    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes, binary = TRUE, ordered = TRUE
   )
   
   # Compare vectors across all 3 units 
@@ -83,14 +85,16 @@ test_that("sender, no receivers, no modality", {
   multidim_arr["Mentor", "window"] <- 360
   multidim_arr["Player", "window"] <- 180
   
-  result_old <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_old <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  })
   result_new <- accumulate(
-    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes
+    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes, ordered = TRUE
   )
   
   # Compare vectors across all 3 units 
@@ -136,14 +140,16 @@ test_that("no senders, receiver, no modality", {
   multidim_arr["L1", "window"] <- 360
   multidim_arr["L2", "window"] <- 180
   
-  result_old <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_old <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  })
   result_new <- accumulate(
-    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes
+    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes, ordered = TRUE
   )
   
   # Compare vectors across all 3 units 
@@ -193,15 +199,16 @@ test_that("sender, no receiver, modality", {
   multidim_arr["Player", "chat", "window"] <- 180
   multidim_arr["Player", "resource", "window"] <- 360
   
-  
-  result_old <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_old <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  })
   result_new <- accumulate(
-    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes
+    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes, ordered = TRUE
   )
   
   
@@ -254,14 +261,16 @@ test_that("no sender, receiver, modality", {
   multidim_arr["L2", "chat", "window"] <- 60
   multidim_arr["L2", "resource", "window"] <- 120
   
-  result_old <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+  suppressWarnings({
+    result_old <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  })
   result_new <- accumulate(
-    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes
+    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes, ordered = TRUE
   )
   
   # Compare vectors across all 3 units 
@@ -313,15 +322,17 @@ test_that("sender, receiver, no modality", {
   win_weights["Mentor", "L2", "window"] <- 180
   win_weights["Player", "L1", "window"] <- 250
   win_weights["Player", "L2", "window"] <- 200
-  
-  result_old <- accum_multidim(
-    tensor = win_weights, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+
+  suppressWarnings({
+    result_old <- accum_multidim(
+      tensor = win_weights, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  })
   result_new <- accumulate(
-    context_model = context_model, tensor = win_weights, time_column = time_column, codes = codes
+    context_model = context_model, tensor = win_weights, time_column = time_column, codes = codes, ordered = TRUE
   )
   
   
@@ -383,15 +394,17 @@ test_that("sender, receiver, modality", {
   multidim_arr["Player", "L1", "resource", "window"] <- 200
   multidim_arr["Player", "L2", "chat", "window"] <- 150
   multidim_arr["Player", "L2", "resource", "window"] <- 360
-  
-  result_old <- accum_multidim(
-    tensor = multidim_arr, 
-    time_column = time_column,
-    codes = codes,
-    context_model = context_model
-  )
+
+  suppressWarnings({
+    result_old <- accum_multidim(
+      tensor = multidim_arr, 
+      time_column = time_column,
+      codes = codes,
+      context_model = context_model
+    )
+  })
   result_new <- accumulate(
-    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes
+    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes, ordered = TRUE
   )
   
   # Compare vectors across all 3 units 
@@ -503,7 +516,7 @@ test_that("senders, receivers, modality", {
   
   
   result_new <- accumulate(
-    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes
+    context_model = context_model, tensor = multidim_arr, time_column = time_column, codes = codes, ordered = TRUE
   )
   
   # Get old TMA results
@@ -564,10 +577,10 @@ test_that("no senders, no receivers, no modality", {
   result_new <- accumulate(
     context_model = context_model, 
     tensor = multidim_arr, 
-    codes = codes
+    codes = codes, ordered = TRUE
   )
   result_new2 <- accumulate(
-    context_model = context_model, codes = codes
+    context_model = context_model, codes = codes, ordered = TRUE
   )
   
   testthat::expect_equal(as.matrix(result_new$connection.counts), as.matrix(result_new2$connection.counts))
